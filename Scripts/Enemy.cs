@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System;
 
 /*
 	Clase con una pequeña inteligencia artificial para el control de los enemigos
@@ -29,75 +30,94 @@ public class Enemy : MonoBehaviour
 	private float vidaResta = 0.1f;
 	CircleCollider2D attackCollider;
 	
-	/* Experiencia que da al mater el enemigo */
+	/* Experiencia que da al matar el enemigo */
 	Scrollbar barraExpJugador;
 	public float expObtengo = 20;	
-	public Text textoExp;
+	//public Text textoExp;
 	public Animator animTextoExp;
 	
+	
+	ControlPlayer controlPlayer;
+	
 	/* Aumenta la barra de experiencia del jugador */
-	public void expAlJugador(){
-		textoExp.text = "+"+ expObtengo + " EXP";
-		//la experiencia sube segun el nivel expObtengo/(Math.Pow(2, nivel) * 50)
+	public void expAlJugador(GameObject jug){
 		
-		/* cuando me paso*/
-		int valorExpTot = barraExpJugador.size + (expObtengo/(Math.Pow(2, nivel) * 50));
-		while (valorExpTot >= 1f ){
-			SubirNivel();
+		//textoExp.text = "+"+ expObtengo + " EXP";
+		
+		// Obtengo el nivel actual del jugador
+		int nivel = jug.GetComponent<ControlPlayer>().NivelJugador();		
+		
+		// Valor de la experiencia obtenida más la que tenia
+		// La experiencia sube según el nivel. Fórmula -> expObtengo/(Math.Pow(2, nivel) * 50)
+		float valorExpTot = (float)(barraExpJugador.size + (expObtengo/(Math.Pow(2, nivel) * 50)));
+		
+		/* Si consigo más experiencia de la que necesito para subir de nivel */
+		while (valorExpTot >= 1f ){			
+			// Subo de nivel
+			jug.GetComponent<ControlPlayer>().ActulizarLvl();					
+			// Resto al total 1 el equivalente a un nivel
 			valorExpTot -= 1f;
 		}
-		barraExpJugador.size = valorExpTot;
-		/* fin cuando me paso */
 		
+		// Actuliza la barra por el nuevo valor
+		barraExpJugador.size = valorExpTot;
+				
 		//barraExpJugador.size += expObtengo/(Math.Pow(2, nivel) * 50);
-		textoExp.enabled = true;	
-		animTextoExp.Play("Experiencia");
+		//textoExp.enabled = true;	
+		//animTextoExp.Play("Experiencia");
+		
+		// Guarda en las preferencias del player la nueva experiencia
 		PlayerPrefs.SetFloat("Experiencia", barraExpJugador.size);
-		/*float playTime = animTextoExp.GetCurrentAnimatorStateInfo(0).normalizedTime;
-		if(playTime > 1.3f){
-			textoExp.enabled = false;
-		}*/
+		
+		//float playTime = animTextoExp.GetCurrentAnimatorStateInfo(0).normalizedTime;
+		//if(playTime > 1.3f){
+			//textoExp.enabled = false;
+		//}
 	}
 	
 	void Start()
     {		
 		player = GameObject.FindGameObjectWithTag("Player"); //Objetivo a seguir 
+		//controlPlayer = GameObject.FindGameObjectWithTag("Player").GetComponent<ControlPlayer>();
 		barraExpJugador = GameObject.FindWithTag("Experiencia").GetComponent<Scrollbar>();
 		//Posicion inicial
 		initialPosition = transform.position;
 		anim = GetComponent<Animator>();
 		rb2d = GetComponent<Rigidbody2D>();
-		attackCollider = transform.GetChild(1).GetComponent<CircleCollider2D>();
+		attackCollider = transform.GetChild(0).GetComponent<CircleCollider2D>();
 		attackCollider.enabled = false;				
-		textoExp.enabled = false;		
+		//textoExp.enabled = false;		
     }
     
     void Update()
     {
+		// Comprueba que el jugador no sea nulo
 		if(player != null){
-					
-			//Por defecto nos quedamos donde esytamos
+				
+			// Por defecto el enemigo se queda donde estaba
 			Vector3 target = initialPosition;
 		
-			RaycastHit2D hit = Physics2D.Raycast(transform.position, player.transform.position - transform.position, radioVision, 1 << LayerMask.NameToLayer("Default")	);
+			// Rayo para averiguar si colisiona el jugador con el enemigo en su radio de visión
+			RaycastHit2D hit = Physics2D.Raycast(transform.position, player.transform.position - transform.position, radioVision, 1 << LayerMask.NameToLayer("Jugador")	);
 			
 			//Debug del Raycast 
 			Vector3 forward = transform.TransformDirection(player.transform.position - transform.position);
+			// Dibuja la línea del raycast de color rojo (No esta dentro del radio de visión)
 			Debug.DrawRay(transform.position, forward, Color.red);
 			
-			//Si el Raycast encuentra al jugador lo ponemos de traget(objetivo)
+			// Si hay una colisión con el rayo 
 			if(hit.collider != null){
+				//Si el Raycast encuentra al jugador lo ponemos de target(objetivo)
 				if(hit.collider.tag == "Player"){
-					target = player.transform.position;
+					target = player.transform.position;				
 				}
 			}
 			
 			//Calculamos la distancia entre el enemigo y el objetivo
-			float distance = Vector3.Distance(target, transform.position);
+			float distance = Vector3.Distance(target, transform.position);			
 			Vector3 dirMira = (target - transform.position).normalized;
-			//Si muere se queda en el sitio
-			
-			//Si es el enemigo y está 
+						
+			// Si está dentro de la distancia de ataque, ataca
 			if(target != initialPosition && distance < radioAtaque){			
 				//Dirección del ataque
 				float dirAttack = player.transform.position.x - transform.position.x;
@@ -106,42 +126,47 @@ public class Enemy : MonoBehaviour
 				anim.SetTrigger("Enemy_Attack");
 				HabilitarAtaque();
 			}else{
-				rb2d.MovePosition(transform.position + dirMira * speed * Time.deltaTime);			
+				// Si no esta en el radio de Ataque sigue al objetivo
+				rb2d.MovePosition(transform.position + dirMira * speed);							
 				anim.SetFloat("MovX", dirMira.x);
 				anim.SetBool("Walk", true);
 			}
 			
-			
+			// Si se queda sin vida
 			if (barraVida.size <= 0f){
 				//anim.Play("Zombie_Dead");
 				if(barraVida.size != 0.001f){
+					// Reinicio valores para que deje de seguirlo, atacar o volver a su posicion inicial
 					anim.SetTrigger("Dead");
 					radioAtaque = 0f;
 					radioVision = 0f;					
-					//Espera el timepo de la animacion mas 0.5 segundos más para desaparecer el object enemigo
-					Destroy (gameObject,anim.GetCurrentAnimatorStateInfo(0).length + 1f);
-					//Para que no regrese a su posición original
 					initialPosition = transform.position;
-					expAlJugador();
-				}				
-				barraVida.size = 0.001f;
-				
+					//Espera el timepo de la animación + 1 segundo para desaparecer el object enemigo
+					Destroy (gameObject,anim.GetCurrentAnimatorStateInfo(0).length + 1f);				
+					// Subo la experiencia del jugador
+					expAlJugador(player);
+				}
+				// Al estar en un bucle infinito se cambia el valor para que no vuelva a entrar en el if 
+				barraVida.size = 0.001f;				
 			}
-			// 
+			
+			// Si regresa a su posición inicial deja de 'andar' 
 			if(target == initialPosition && distance < 20f){
 				transform.position = initialPosition;
 				anim.SetBool("Walk",false);			
 			}
-			
+			// Dibujo de una línea cuando encuentra el objetivo en verde
 			Debug.DrawLine(transform.position, target, Color.green);
 			
-		}else{
+		}else{	
+			// Si no encuentra el jugador lo vuelve a buscar
 			player = GameObject.FindGameObjectWithTag("Player"); //Objetivo a seguir 
-			barraExpJugador = GameObject.FindWithTag("Experiencia").GetComponent<Scrollbar>();
+			barraExpJugador = GameObject.FindWithTag("Experiencia").GetComponent<Scrollbar>();			
 		}
 			
     }
 	
+	/* Habilita la colisión de ataque */
 	void HabilitarAtaque(){
 		//Estado actual del animador
 		AnimatorStateInfo stateInfo = anim.GetCurrentAnimatorStateInfo(0);
@@ -157,17 +182,18 @@ public class Enemy : MonoBehaviour
 		}	
 	}
 	
-	
+	/* Si recibe una colisión */ 
 	void OnTriggerEnter2D(Collider2D col)
     {
-		if(barraVida.size != 0.001f){			
+		if(barraVida.size != 0.001f){
+			// Si la colisión es un ataque
 			if(col.tag == "Ataque"){
 				barraVida.size -= vidaResta;
 			}		
 		}
     }	
 	
-	//Dibujo de los radios 'Debug'
+	// Método sobreescrito que dibuja los radios de visión y de ataque (Debug)
 	void OnDrawGizmosSelected(){
 		Gizmos.color = Color.yellow;
 		Gizmos.DrawWireSphere(transform.position, radioVision);

@@ -15,9 +15,9 @@ public class CambioSala : MonoBehaviour
 	System.Random random;
 	GameObject player;
 	Vector3 nuevaPosicion;
-	private static int salasJugadas = 0;
+	private static int salasJugadas = 1;
 	
-	public GameObject prefab;
+	public GameObject objetoSala;
 	static List<GameObject> listaObjetos = new List<GameObject>();
 	
 	// Inicialización de variables
@@ -125,15 +125,17 @@ public class CambioSala : MonoBehaviour
 		Instancia los objetos es una posición aleatoria
 	*/
 	void CrearObjetosSala(){
-		// Posiciones de los objetos
-		Vector3 pos = new Vector3(random.Next(80, 740), random.Next(100, 400), 0f);
-		Vector3 pos2 = new Vector3(random.Next(80, 740), random.Next(100, 400), 0f);
-		Vector3 pos3 = new Vector3(random.Next(80, 740), random.Next(100, 400), 0f);
-		
-		// Añade los obejtos creados a la lista 
-		listaObjetos.Add((GameObject)Instantiate(prefab, pos, Quaternion.identity));
-		listaObjetos.Add((GameObject)Instantiate(prefab, pos2, Quaternion.identity));
-		listaObjetos.Add((GameObject)Instantiate(prefab, pos3, Quaternion.identity));
+		if(objetoSala != null){		
+			// Posiciones de los objetos
+			Vector3 pos = new Vector3(random.Next(80, 740), random.Next(100, 400), 0f);
+			Vector3 pos2 = new Vector3(random.Next(80, 740), random.Next(100, 400), 0f);
+			Vector3 pos3 = new Vector3(random.Next(80, 740), random.Next(100, 400), 0f);
+			
+			// Añade los obejtos creados a la lista 
+			listaObjetos.Add((GameObject)Instantiate(objetoSala, pos, Quaternion.identity));
+			listaObjetos.Add((GameObject)Instantiate(objetoSala, pos2, Quaternion.identity));
+			listaObjetos.Add((GameObject)Instantiate(objetoSala, pos3, Quaternion.identity));
+		}
 	}
 	
 	

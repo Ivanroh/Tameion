@@ -7,56 +7,15 @@ using UnityEngine.SceneManagement;
 
 public class CreateObjects : Photon.MonoBehaviour
 {
-	public GameObject prefab;
-	public int numberOfObjects = 5;	
-		
-	private int salas = 1;
+	public GameObject texto1;
+	public GameObject texto2;
 	
-	void Start(){
-		System.Random random = new System.Random();
-		for (int i = 0; i < numberOfObjects; i++) {			
-			int posicionX = random.Next(80, 740);
-			int posicionY = random.Next(100, 400);			
-			Vector3 pos = new Vector3(posicionX, posicionY, 0f);
-			Instantiate(prefab, pos, Quaternion.identity);
-		}
+	public void CambiarTexto(){
+		if(texto1.GetActive()){
+			texto1.SetActive(false);
+			texto2.SetActive(true);
+		}else
+			SceneManager.LoadScene("Mazmorra");
 	}
-	/*
-	public void CrearObjetos(){
-		System.Random random = new System.Random();
-		for (int i = 0; i < numberOfObjects; i++) {			
-			int posicionX = random.Next(80, 740);
-			int posicionY = random.Next(100, 400);			
-			Vector3 pos = new Vector3(posicionX, posicionY, 0f);
-			Instantiate(prefab, pos, Quaternion.identity);
-		}
-	}
-	*/
-	
-	public void NuevaSala(){
-		//PhotonNetwork.Disconnect();
-		//SceneManager.LoadScene("Tierra");
-		salas++;
-		//Debug.Log("Número de salas: " + salas);
-	}
-	
-	public int NumeroSalasHechas(){
-		return salas;
-	}
-	
-	
-	public void SwitchLevel (string level)
-	{		
-	  StartCoroutine (DoSwitchLevel(level));
-	}
-
-	IEnumerator DoSwitchLevel (string level)
-	{
-	  PhotonNetwork.Disconnect();
-	  while (PhotonNetwork.connected)
-		yield return null;
-	  SceneManager.LoadScene(level);
-	}
-	
 	
 }
